@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f4ef;
+  --foreground: #16233d;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces);
+
+  /* Charge Guard palette */
+  --color-ink: #16233d;
+  --color-ink-soft: #3b4a63;
+  --color-paper: #f6f4ef;
+  --color-paper-dim: #edeae1;
+  --color-teal: #0e7c7b;
+  --color-teal-soft: #e4f1f0;
+  --color-amber: #c97a2b;
+  --color-amber-soft: #f6e9da;
+  --color-rose: #b23a48;
+  --color-rose-soft: #f5e1e2;
+  --color-line: #dedbd1;
+
+  /* Brand — used for the logo mark and primary actions (buttons, links,
+    focus states). Everything else (status colors, body text) stays as-is. */
+  --color-brand: #f97316;
+  --color-brand-light: #fb923c;
+  --color-brand-soft: #fff1e6;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-ink);
+  outline: none;
+  background: white;
+}
+
+.input:focus {
+  border-color: var(--color-brand);
+}
