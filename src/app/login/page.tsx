@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Field from "@/components/Field";
+import { Logo } from "@/components/Logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,8 +32,10 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/dashboard");
+      router.push(mode === "signup" ? "/notifications" : "/dashboard");
       router.refresh();
+    } catch {
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -41,13 +44,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper px-6">
       <div className="w-full max-w-sm">
-        {/* <div className="flex justify-center mb-7"><Wordmark /></div> */}
-        <Link href="/" className="flex items-center justify-center gap-2 mb-7">
-          <span className="w-2.5 h-2.5 rounded-full bg-brand" />
-          <span className="font-display text-2xl font-semibold text-ink">
-            Charge Guard
-          </span>
-        </Link>
+        <div className="flex justify-center mb-7">
+          <Logo href="/" textClassName="text-2xl" />
+        </div>
 
         <div className="bg-white border border-line rounded-xl p-7 shadow-sm">
           <div className="flex gap-1 bg-paper-dim rounded-lg p-1 mb-6">
@@ -56,7 +55,7 @@ export default function LoginPage() {
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`flex-1 py-2 rounded-md text-sm font-semibold transition ${mode === m
+                className={`flex-1 py-2 rounded-md border-none cursor-pointer text-sm font-semibold transition ${mode === m
                     ? "bg-white text-ink shadow-sm"
                     : "text-ink-soft"
                   }`}
@@ -67,10 +66,7 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1.5">
-                Email
-              </label>
+            <Field label="Email">
               <input
                 type="email"
                 required
@@ -79,11 +75,9 @@ export default function LoginPage() {
                 className="w-full border border-line rounded-lg px-3 py-2.5 text-sm text-ink outline-none focus:border-brand"
                 placeholder="you@example.com"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1.5">
-                Password
-              </label>
+            </Field>
+
+            <Field label="Password">
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
@@ -103,7 +97,7 @@ export default function LoginPage() {
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
-            </div>
+            </Field>
 
             {error && (
               <p className="text-sm text-rose bg-rose-soft rounded-lg px-3 py-2">
@@ -118,7 +112,7 @@ export default function LoginPage() {
               //   width: "100%", marginTop: 8, fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
               //   color: "#fff", background: COLORS.ink, border: "none", borderRadius: 8, padding: "12px 0", cursor: "pointer"
               // }}
-              className="w-full bg-brand hover:bg-brand-light transition-colors text-white font-semibold text-sm rounded-lg py-2.5 disabled:opacity-60"
+              className="w-full mt-2 bg-brand hover:bg-brand-light transition-colors text-white font-semibold text-sm border-none rounded-lg py-3 disabled:opacity-60 cursor-pointer"
             >
               {loading ? "Please wait…" : mode === "signup" ? "Create account" : "Log in"}
             </button>

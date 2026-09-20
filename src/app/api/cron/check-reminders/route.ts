@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { computeDue } from "@/lib/dueDate";
+import { computeDue } from "@/lib/utils";
 import { sendPushToSubscription, sendTelegramMessage, StaleSubscriptionError } from "@/lib/notify";
 
 /**

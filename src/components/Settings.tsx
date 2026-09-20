@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { enablePushNotifications } from "@/lib/pushClient";
 import { Bell, Send, LogOut } from "lucide-react";
+import { TopNav } from "@/components/TopNav";
+import { enablePushNotifications } from "@/lib/pushClient";
 
 type Me = {
   email: string;
@@ -71,20 +72,12 @@ export function Settings() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <header className="border-b border-line">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-brand" />
-            <span className="font-display text-lg font-semibold text-ink">Charge Guard</span>
-          </a>
-          <a href="/dashboard" className="text-sm font-semibold text-ink-soft px-3 py-1.5 rounded-md hover:bg-paper-dim">
-            Dashboard
-          </a>
-        </div>
-      </header>
+      <TopNav />
 
-      <main className="max-w-2xl mx-auto px-6 py-8">
-        <h1 className="font-display text-2xl font-semibold text-ink mb-6">Settings</h1>
+      <main className="max-w-160 mx-auto px-6 pt-9 pb-20">
+        <h1 className="font-display text-2xl font-semibold text-ink mb-6">
+          Settings
+        </h1>
 
         {message && <p className="text-sm text-teal mb-4">{message}</p>}
 
@@ -142,7 +135,7 @@ export function Settings() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 text-sm font-semibold text-rose border border-line rounded-lg px-4 py-2.5 hover:bg-rose-soft transition-colors"
+          className="flex items-center gap-2 text-sm font-semibold text-rose border border-line rounded-lg mt-2 px-4 py-2.5 hover:bg-rose-soft transition-colors cursor-pointer"
         >
           <LogOut size={14} /> Sign out
         </button>
@@ -154,8 +147,12 @@ export function Settings() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <div className="text-xs font-semibold text-ink-soft mb-2">{title}</div>
-      <div className="bg-white border border-line rounded-lg overflow-hidden">{children}</div>
+      <div className="text-xs font-semibold text-ink-soft mb-2">
+        {title}
+      </div>
+      <div className="bg-white border border-line rounded-lg overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }
@@ -174,13 +171,18 @@ function Row({
   return (
     <div className="flex items-center justify-between p-4 border-b border-line last:border-b-0">
       <div>
-        <div className="text-sm text-ink-soft">{label}</div>
+        <div className="text-sm text-ink-soft">
+          {label}
+        </div>
         <div className="font-mono text-sm text-ink mt-0.5 flex items-center gap-1.5">
           {icon} {value}
         </div>
       </div>
       {action && (
-        <button onClick={action.onClick} className="text-xs font-semibold bg-paper-dim rounded-md px-3 py-1.5">
+        <button
+          onClick={action.onClick}
+          className="text-xs font-semibold text-ink bg-paper-dim border-none rounded-md px-3 py-1.5"
+        >
           {action.label}
         </button>
       )}

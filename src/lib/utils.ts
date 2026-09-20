@@ -1,4 +1,4 @@
-export type DueStatus = "ok" | "soon" | "overdue";
+import { DueStatus } from "./types";
 
 export function daysFromNow(n:number) {
   const d = new Date();

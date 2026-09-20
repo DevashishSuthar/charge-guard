@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from "lucide-react";
+import { Logo } from "@/components/Logo";
 
 const fanCards = [
   {
@@ -40,46 +41,23 @@ const stats: [string, string][] = [
   ["Telegram", "+ push, not another app to check"],
 ];
 
-// function Wordmark({ size = 22 }) {
-//   return (
-//     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-//       <div style={{
-//         width: size + 10, height: size + 10, borderRadius: 7, background: COLORS.ink,
-//         display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-//       }}>
-//         <div style={{
-//           width: 6, height: 6, borderRadius: "50%", background: COLORS.amber,
-//           boxShadow: `8px 0 0 ${COLORS.teal}`
-//         }} />
-//       </div>
-//       <span style={{ fontFamily: "'Fraunces', serif", fontWeight: 600, fontSize: size, color: COLORS.ink, letterSpacing: "-0.01em" }}>
-//         Parchi
-//       </span>
-//     </div>
-//   );
-// }
-
 export function Landing() {
   return (
     <div className="min-h-screen bg-paper">
       <header className="max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-brand" />
-          <span className="font-display text-lg font-semibold text-ink">
-            Charge Guard
-          </span>
-        </div>
+        <Logo href="/" />
+
         <Link
           href="/login"
-          className="text-sm font-semibold text-ink border border-line rounded-lg px-4 py-2 hover:bg-paper-dim transition-colors"
+          className="text-sm font-semibold text-ink border border-line rounded-lg px-4 py-2 hover:bg-paper-dim transition-colors cursor-pointer"
         >
           Log in
         </Link>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 pt-12 pb-20 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
+      <main className="max-w-270 mx-auto px-6 pt-12 pb-20 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-14 items-center">
         <div>
-          <h1 className="font-display font-semibold text-ink text-[clamp(32px,5vw,50px)] leading-[1.08] tracking-tight max-w-lg">
+          <h1 className="font-display font-semibold text-ink text-[clamp(34px, 4.5vw, 52px)] leading-[1.08] tracking-tight max-w-lg">
             Nobody&apos;s phone should go dark because you forgot a recharge.
           </h1>
           <p className="text-ink-soft text-base leading-relaxed mt-5 max-w-md">
@@ -91,20 +69,13 @@ export function Landing() {
           <div className="flex flex-wrap items-center gap-3 mt-8">
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 bg-brand hover:bg-brand-light transition-colors text-white font-semibold text-sm rounded-lg px-6 py-3"
+              className="inline-flex items-center gap-2 bg-brand hover:bg-brand-light transition-colors text-white font-semibold text-sm border-none rounded-lg px-6 py-3 cursor-pointer"
             >
-              Get started
-              <ArrowRight size={15} aria-hidden />
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm font-semibold text-ink-soft px-2 py-3 hover:text-ink transition-colors"
-            >
-              Already have an account? Log in
+              Get started <ArrowRight size={15} aria-hidden />
             </Link>
           </div>
 
-          <div className="flex flex-wrap gap-8 mt-12">
+          <div className="flex flex-wrap gap-7 mt-10">
             {stats.map(([n, l]) => (
               <div key={l}>
                 <div className="font-mono text-xl font-semibold text-ink">{n}</div>
@@ -114,14 +85,14 @@ export function Landing() {
           </div>
         </div>
 
-        <div className="relative h-72 flex items-center justify-center">
+        <div className="relative h-85 flex items-center justify-center">
           {fanCards.map((c, i) => (
             <div
               key={c.label}
-              className="absolute w-56 bg-white border border-line rounded-xl px-5 py-4 shadow-md"
+              className="absolute w-57.5 bg-white border border-line rounded-xl px-5 py-4 shadow-md"
               style={{ transform: `rotate(${c.rotate}deg) translateX(${i * 8}px)`, zIndex: i }}
             >
-              <div className="font-display font-semibold text-ink">
+              <div className="font-display font-semibold text-ink text-base">
                 {c.label}
               </div>
               <div className="flex items-end justify-between mt-4 pt-3 border-t border-dashed border-line">

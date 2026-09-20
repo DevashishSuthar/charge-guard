@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth";
-import { computeDue } from "@/lib/dueDate";
+import { computeDue } from "@/lib/utils";
 
 export async function GET() {
   const userId = await getSessionUserId();
