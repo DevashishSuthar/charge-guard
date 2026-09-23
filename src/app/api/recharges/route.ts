@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth";
 import { computeDue } from "@/lib/utils";
+import { paiseToRupees, rupeesToPaise } from "@/lib/utils";
 
 export async function GET() {
   const userId = await getSessionUserId();
@@ -15,7 +16,7 @@ export async function GET() {
 
   // Attach computed due/status so the client never has to duplicate this math.
   const withStatus = items
-    .map((item) => ({ ...item, ...computeDue(item) }))
+    .map((item) => ({ ...item, amount: paiseToRupees(item.amount), ...computeDue(item) }))
     .sort((a, b) => a.daysLeft - b.daysLeft);
 
   return NextResponse.json(withStatus);
@@ -26,7 +27,7 @@ const createSchema = z.object({
   provider: z.string().min(1).max(40),
   type: z.enum(["MOBILE", "BROADBAND", "OTHER"]).default("MOBILE"),
   phone: z.string().max(20).optional(),
-  amount: z.number().int().positive(),
+  amount: z.number().positive(),
   cycleDays: z.number().int().positive(),
   lastRecharge: z.coerce.date(),
   leadDays: z.number().int().min(0).max(30).default(3),
@@ -41,9 +42,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  let amountInPaise: number;
+  try {
+    amountInPaise = rupeesToPaise(parsed.data.amount);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+  }
+
   const item = await prisma.rechargeItem.create({
-    data: { ...parsed.data, userId },
+    data: { ...parsed.data, amount: amountInPaise, userId },
   });
 
-  return NextResponse.json(item, { status: 201 });
+  return NextResponse.json({ ...item, amount: paiseToRupees(item.amount) }, { status: 201 });
 }

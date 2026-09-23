@@ -17,6 +17,9 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; error?: 
   }
 
   const keyRes = await fetch("/api/push/vapid-public-key");
+  if (!keyRes.ok) {
+    return { ok: false, error: "Couldn't load the browser push configuration" };
+  }
   const { key } = await keyRes.json();
   if (!key) {
     return { ok: false, error: "Server push keys aren't configured yet" };
@@ -28,11 +31,15 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; error?: 
     applicationServerKey: urlBase64ToUint8Array(key),
   });
 
-  await fetch("/api/push/subscribe", {
+  const subscribeRes = await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(subscription.toJSON()),
   });
+
+  if (!subscribeRes.ok) {
+    return { ok: false, error: "Couldn't save this browser for notifications" };
+  }
 
   return { ok: true };
 }

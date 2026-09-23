@@ -11,11 +11,11 @@ if (vapidPublic && vapidPrivate) {
   );
 }
 
-export async function sendTelegramMessage(chatId: string, text: string) {
+export async function sendTelegramMessage(chatId: string, text: string): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) {
     console.warn("TELEGRAM_BOT_TOKEN not set, skipping Telegram send");
-    return;
+    return false;
   }
 
   const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -26,7 +26,10 @@ export async function sendTelegramMessage(chatId: string, text: string) {
 
   if (!res.ok) {
     console.error("Telegram send failed", await res.text());
+    return false;
   }
+
+  return true;
 }
 
 export async function sendPushToSubscription(

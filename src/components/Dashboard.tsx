@@ -3,20 +3,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
-import { EditModal } from "@/components/EditModal";
+import { EditModal, RechargeFormValues } from "@/components/EditModal";
 import { RechargeCard } from "@/components/RechargeCard";
 import { enablePushNotifications } from "@/lib/pushClient";
-import type {
-  FormState,
-  RechargeItem,
-} from "@/lib/types";
+import type { RechargeItem } from "@/lib/types";
 
-const emptyForm: FormState = {
+const emptyValues: RechargeFormValues = {
   label: "",
   provider: "",
   type: "MOBILE",
   phone: "",
-  amount: "",
+  amount: 0,
   cycleDays: 28,
   lastRecharge: new Date().toISOString().slice(0, 10),
   leadDays: 3,
@@ -29,7 +26,7 @@ export function Dashboard() {
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [initialValues, setInitialValues] = useState<RechargeFormValues>(emptyValues);
   const [saving, setSaving] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
 
@@ -54,18 +51,18 @@ export function Dashboard() {
 
   function openAdd() {
     setEditingId(null);
-    setForm(emptyForm);
+    setInitialValues(emptyValues);
     setModalOpen(true);
   }
 
   function openEdit(item: RechargeItem) {
     setEditingId(item.id);
-    setForm({
+    setInitialValues({
       label: item.label,
       provider: item.provider,
       type: item.type,
       phone: item.phone ?? "",
-      amount: String(item.amount),
+      amount: item.amount,
       cycleDays: item.cycleDays,
       lastRecharge: item.lastRecharge.slice(0, 10),
       leadDays: item.leadDays,
@@ -73,18 +70,12 @@ export function Dashboard() {
     setModalOpen(true);
   }
 
-  async function handleSave() {
+  async function handleSave(data: RechargeFormValues) {
     setSaving(true);
     try {
-      const payload = {
-        label: form.label,
-        provider: form.provider,
-        type: form.type,
-        phone: form.phone || undefined,
-        amount: Number(form.amount),
-        cycleDays: form.cycleDays,
-        lastRecharge: form.lastRecharge,
-        leadDays: form.leadDays,
+      const payload = { 
+        ...data,
+        phone: data.phone || undefined 
       };
 
       const res = await fetch(
@@ -193,8 +184,7 @@ export function Dashboard() {
 
       {modalOpen && (
         <EditModal
-          form={form}
-          setForm={setForm}
+          initialValues={initialValues}
           isEditing={Boolean(editingId)}
           saving={saving}
           onSave={handleSave}

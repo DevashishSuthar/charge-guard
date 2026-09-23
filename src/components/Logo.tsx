@@ -27,7 +27,7 @@ export function Logo({
   size?: number;
 }) {
   const mark = (
-     <div className="flex items-center gap-2">
+      <div className={`flex items-center gap-2 ${className}`}>
       <div
         className="rounded-[7px] bg-ink flex items-center justify-center shrink-0"
         style={{ width: size + 10, height: size + 10 }}
@@ -35,8 +35,7 @@ export function Logo({
         <div className="w-1.5 h-1.5 rounded-full bg-amber shadow-[8px_0_0_var(--color-teal)]" />
       </div>
       <span
-        className="font-display font-semibold text-ink tracking-[-0.01em]"
-        style={{ fontSize: size }}
+              className={`font-display font-semibold text-ink tracking-[-0.01em] whitespace-nowrap ${textClassName}`}
       >
         Charge Guard
       </span>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeDue } from "@/lib/utils";
 import { sendPushToSubscription, sendTelegramMessage, StaleSubscriptionError } from "@/lib/notify";
+import { formatRupees } from "@/lib/utils";
 
 /**
  * Runs once a day (see vercel.json). For every recharge that's due soon or
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
     const message =
       status === "overdue"
         ? `⚠️ ${item.label}'s ${item.provider} recharge was due ${dueLabel} — it's overdue.`
-        : `⏰ ${item.label}'s ${item.provider} recharge (₹${item.amount}) is due ${dueLabel}.`;
+        : `⏰ ${item.label}'s ${item.provider} recharge (₹${formatRupees(item.amount)}) is due ${dueLabel}.`;
 
     // Push: send to every device this user has registered, dropping stale ones.
     for (const sub of item.user.pushSubscriptions) {
@@ -63,7 +64,11 @@ export async function GET(req: NextRequest) {
     // Telegram: only if the user connected it. Independent of push — one
     // channel failing (or being absent) never blocks the other.
     if (item.user.telegramChatId) {
-      await sendTelegramMessage(item.user.telegramChatId, message);
+      try {
+        await sendTelegramMessage(item.user.telegramChatId, message);
+      } catch (err) {
+        console.error(`Telegram failed for user ${item.userId}`, err);
+      }
     }
 
     await prisma.rechargeItem.update({

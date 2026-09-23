@@ -9,6 +9,7 @@ import type {
     DueStatus,
     RechargeItem
 } from "@/lib/types";
+import { formatRupeeAmount } from "@/lib/utils";
 
 const statusStyles: Record<DueStatus, { text: string; bg: string; label: string }> = {
     ok: { text: "text-teal", bg: "bg-teal-soft", label: "Upcoming" },
@@ -88,7 +89,7 @@ export function RechargeCard({
                 <div className="mt-4 pt-3 border-t border-dashed border-line flex items-end justify-between">
                     <div>
                         <div className="text-[10px] text-ink-soft mb-0.5">Amount</div>
-                        <div className="font-mono font-semibold text-lg text-ink">₹{item.amount}</div>
+                        <div className="font-mono font-semibold text-lg text-ink">₹{formatRupeeAmount(item.amount)}</div>
                     </div>
                     <div className="text-right">
                         <div className="text-[10px] text-ink-soft mb-0.5">Due</div>

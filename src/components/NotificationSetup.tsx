@@ -22,6 +22,7 @@ function NotificationSetup() {
     const router = useRouter();
     const [pushOn, setPushOn] = useState(false);
     const [pushMessage, setPushMessage] = useState<string | null>(null);
+    const [telegramMessage, setTelegramMessage] = useState<string | null>(null);
     const [telegramOpen, setTelegramOpen] = useState(false);
     const [telegramConnected, setTelegramConnected] = useState(false);
 
@@ -58,7 +59,12 @@ function NotificationSetup() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ telegramChatId: telegramChatId.trim() }),
             });
-            if (res.ok) setTelegramConnected(true);
+            if (res.ok) {
+                setTelegramConnected(true);
+            } else {
+                const data = await res.json().catch(() => null);
+                setTelegramMessage(data?.error ?? "Could not connect Telegram.");
+            }
         } finally {
             setConnecting(false);
         }
@@ -186,6 +192,9 @@ function NotificationSetup() {
                             >
                                 {connecting ? "Connecting…" : "Connect"}
                             </button>
+                            {telegramMessage && (
+                                <p className="text-xs text-rose mt-2">{telegramMessage}</p>
+                            )}
                         </div>
                     )}
                 </div>

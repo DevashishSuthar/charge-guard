@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSessionUserId } from "@/lib/auth";
+import { paiseToRupees, rupeesToPaise } from "@/lib/utils";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -10,7 +11,7 @@ const patchSchema = z.object({
   provider: z.string().min(1).max(40).optional(),
   type: z.enum(["MOBILE", "BROADBAND", "OTHER"]).optional(),
   phone: z.string().max(20).nullable().optional(),
-  amount: z.number().int().positive().optional(),
+  amount: z.number().positive().optional(),
   cycleDays: z.number().int().positive().optional(),
   lastRecharge: z.coerce.date().optional(),
   leadDays: z.number().int().min(0).max(30).optional(),
@@ -31,12 +32,24 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  let amountInPaise: number | undefined;
+  if (parsed.data.amount !== undefined) {
+    try {
+      amountInPaise = rupeesToPaise(parsed.data.amount);
+    } catch (error) {
+      return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    }
+  }
+
   const updated = await prisma.rechargeItem.update({
     where: { id },
-    data: parsed.data,
+    data: {
+      ...parsed.data,
+      ...(amountInPaise === undefined ? {} : { amount: amountInPaise }),
+    },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json({ ...updated, amount: paiseToRupees(updated.amount) });
 }
 
 export async function DELETE(_req: NextRequest, { params }: Params) {

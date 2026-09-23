@@ -38,6 +38,9 @@ export function Settings() {
       const updated = await res.json();
       setMe((prev) => (prev ? { ...prev, ...updated } : prev));
       setMessage("Telegram chat connected.");
+    } else {
+      const data = await res.json().catch(() => null);
+      setMessage(data?.error ?? "Couldn't save the Telegram chat ID.");
     }
   }
 
@@ -50,6 +53,9 @@ export function Settings() {
     if (res.ok) {
       const updated = await res.json();
       setMe((prev) => (prev ? { ...prev, ...updated } : prev));
+    } else {
+      const data = await res.json().catch(() => null);
+      setMessage(data?.error ?? "Couldn't update the default lead time.");
     }
   }
 

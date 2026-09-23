@@ -29,8 +29,13 @@ export async function GET() {
   });
 }
 
+const telegramChatIdSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() || null : value),
+  z.union([z.string().regex(/^-?\d+$/, "Enter a valid Telegram chat ID"), z.null()])
+);
+
 const patchSchema = z.object({
-  telegramChatId: z.string().nullable().optional(),
+  telegramChatId: telegramChatIdSchema.optional(),
   defaultLeadDays: z.number().int().min(0).max(30).optional(),
 });
 

@@ -38,7 +38,7 @@ model RechargeItem {
   provider      String       // "Jio", "Airtel", "Vi", "JioFiber"
   type          RechargeType @default(MOBILE)
   phone         String?
-  amount        Int          // paise-free rupee amount, e.g. 239
+  amount        Int          // amount in paise, e.g. 23900 for ₹239.00
   cycleDays     Int          // 28, 30, 84, 365
   lastRecharge  DateTime
   leadDays      Int          @default(3) // remind this many days before due
