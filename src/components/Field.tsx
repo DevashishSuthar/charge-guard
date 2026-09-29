@@ -1,31 +1,44 @@
+import type { ReactNode } from "react";
+
+type FieldProps = {
+  label: string;
+  htmlFor?: string;
+  error?: string;
+  className?: string;
+  children: ReactNode;
+};
+
+const labelClass = "block text-xs font-semibold text-ink mb-1.5";
+
+function ErrorText({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-xs text-rose mt-1">{message}</p>;
+}
+
 function Field({
   label,
+  htmlFor,
+  error,
   children,
   className = "",
-}: {
-  label: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+}: FieldProps) {
   return (
     <div className={className}>
-      <label className="block text-xs font-semibold text-ink mb-1.5">
-        {label}
-      </label>
+      {htmlFor ? (
+        <label
+          htmlFor={htmlFor}
+          className={labelClass}>
+          {label}
+        </label>
+      ) : (
+        <div className={labelClass}>
+          {label}
+        </div>
+      )}
       {children}
+      {error && <ErrorText message={error} />}
     </div>
   );
 }
-
-//    <div style={{ marginBottom: 14 }}>
-//       <label style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}>
-//         {label}
-//       </label>
-//       <input type={type} placeholder={placeholder} style={{
-//   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-//   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-//   outline: "none", background: "#fff"
-// }} />
-//     </div>
 
 export default Field;

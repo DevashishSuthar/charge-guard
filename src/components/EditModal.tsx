@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { X } from "lucide-react";
 import { z } from "zod";
 
 import Field from "./Field";
+import { addDays } from "@/lib/utils";
 
 const rechargeTypes = ["MOBILE", "BROADBAND", "OTHER"] as const;
 
@@ -56,6 +58,10 @@ const rechargeFormSchema = z
 export type RechargeFormValues = z.infer<typeof rechargeFormSchema>;
 type RechargeFormInput = z.input<typeof rechargeFormSchema>;
 
+const toggleBtn = (active: boolean) =>
+  `flex-1 rounded-md py-1.5 px-1 transition-colors cursor-pointer ${active ? "bg-white text-ink shadow-sm" : "text-ink-soft"
+  }`;
+
 export function EditModal({
   initialValues,
   isEditing,
@@ -63,15 +69,17 @@ export function EditModal({
   onSave,
   onClose,
 }: {
-    initialValues: RechargeFormValues;
+  initialValues: RechargeFormValues;
   isEditing: boolean;
   saving: boolean;
-    onSave: (data: RechargeFormValues) => void | Promise<void>;
+  onSave: (data: RechargeFormValues) => void | Promise<void>;
   onClose: () => void;
 }) {
   const {
     register,
     handleSubmit,
+    control,
+    setValue,
     formState: { errors },
   } = useForm<RechargeFormInput, unknown, RechargeFormValues>({
     resolver: zodResolver(rechargeFormSchema),
@@ -79,134 +87,168 @@ export function EditModal({
     mode: "onBlur",
   });
 
-  const submit = handleSubmit((data) => onSave(data));
+  // Most people have no idea when they last recharged — but their provider's
+  // app/SMS tells them exactly when the current pack expires. So instead of
+  // forcing everyone to reconstruct "last recharged on", offer that as an
+  // alternative: enter the expiry date and derive lastRecharge from it
+  // (expiry - cycleDays), clamped so it never lands in the future.
+  const [dateMode, setDateMode] = useState<"last" | "expiry">(isEditing ? "last" : "expiry");
+  const [expiryInput, setExpiryInput] = useState<string>(() => {
+    if (!initialValues.lastRecharge) return "";
+    const d = new Date(initialValues.lastRecharge);
+    if (Number.isNaN(d.getTime())) return "";
+    return addDays(d, initialValues.cycleDays).toISOString().slice(0, 10);
+  });
+  const [expiryError, setExpiryError] = useState<string | null>(null);
+
+  const cycleDaysValue = useWatch({ control, name: "cycleDays" });
+  const lastRechargeValue = useWatch({ control, name: "lastRecharge" });
+
+  useEffect(() => {
+    if (dateMode !== "expiry" || !expiryInput) return;
+    const cycleDays = Number(cycleDaysValue);
+    if (!cycleDays || Number.isNaN(cycleDays)) return;
+    const expiry = new Date(expiryInput);
+    if (Number.isNaN(expiry.getTime())) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const computed = addDays(expiry, -cycleDays);
+    const clamped = computed > today ? today : computed;
+
+    setValue("lastRecharge", clamped.toISOString().slice(0, 10), {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }, [dateMode, expiryInput, cycleDaysValue, setValue]);
+
+  const renewsOnLabel = (() => {
+    const cycleDays = Number(cycleDaysValue);
+    if (!lastRechargeValue || !cycleDays || Number.isNaN(cycleDays)) return null;
+    const start = new Date(lastRechargeValue);
+    if (Number.isNaN(start.getTime())) return null;
+    return addDays(start, cycleDays).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  })();
+
+  const submit = handleSubmit((data) => {
+    if (dateMode === "expiry" && !expiryInput) {
+      setExpiryError("Enter the pack's expiry date");
+      return;
+    }
+    onSave(data);
+  });
 
   return (
-    <div className="fixed inset-0 bg-ink/40 flex items-center justify-center p-5 z-50"
-    // style={{
-    //   position: "absolute", inset: 0, background: "rgba(22,35,61,0.4)",
-    //   display: "flex", alignItems: "center", justifyContent: "center", padding: 20, zIndex: 50
-    // }}
+    <div
+      className="fixed inset-0 z-50 bg-ink/40 flex items-center justify-center p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="recharge-modal-title"
     >
       <div className="w-full max-w-md max-h-[88vh] overflow-y-auto bg-white rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-xl font-semibold text-ink">
+          <h2
+            id="recharge-modal-title"
+            className="font-display text-xl font-semibold text-ink"
+          >
             {isEditing ? "Edit recharge" : "Add a recharge"}
           </h2>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close"
-            // style={{
-            //   width: 26, height: 26, borderRadius: 6, border: "none", background: "transparent",
-            //   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
-            // }}
-            className="w-7 h-7 flex items-center justify-center rounded border-none cursor-pointer hover:bg-paper-dim">
+            className="size-7 flex items-center justify-center rounded-md border-none cursor-pointer hover:bg-paper-dim"
+          >
             <X size={17} className="text-ink-soft" />
           </button>
         </div>
 
-        {/* <Row>
-          <Field label="Who's this for" placeholder="e.g. Papa, Wife, Home" type="text" />
-        </Row>
-        <div onInput={e => set("label", e.target.value)} /> */}
-
         <form onSubmit={submit} noValidate>
           <div className="space-y-3">
-            <Field label="Who's this for"
-            // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
+            <Field
+              label="Who's this for"
+              htmlFor="label"
+              error={errors.label?.message}
             >
               <input
+                id="label"
                 className="input"
                 placeholder="e.g. Papa, Wife, Home"
                 {...register("label")}
-              // style={{
-              //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-              //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-              //   outline: "none", background: "#fff"
-              // }}
               />
-              {errors.label && <ErrorText message={errors.label.message} />}
             </Field>
 
-            <div className="flex gap-3">
-              <Field label="Type" className="flex-1"
-              // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Field
+                label="Type"
+                htmlFor="type"
+                className="sm:flex-1"
               >
                 <select
+                  id="type"
                   className="input"
                   {...register("type")}
-                // style={{
-                //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-                //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-                //   outline: "none", background: "#fff"
-                // }}
                 >
                   <option value="MOBILE">Mobile</option>
                   <option value="BROADBAND">Broadband / Fiber</option>
                   <option value="OTHER">Other</option>
                 </select>
               </Field>
-              <Field label="Provider" className="flex-1"
-              // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
+              <Field
+                label="Provider"
+                htmlFor="provider"
+                error={errors.provider?.message}
+                className="sm:flex-1"
               >
                 <input
+                  id="provider"
                   className="input"
                   placeholder="Jio, Airtel, Vi..."
                   {...register("provider")}
-                // style={{
-                //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-                //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-                //   outline: "none", background: "#fff"
-                // }}
                 />
-                {errors.provider && <ErrorText message={errors.provider.message} />}
               </Field>
             </div>
 
-            <Field label="Number (optional)"
-            // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
+            <Field
+              label="Number (optional)"
+              htmlFor="phone"
+              error={errors.phone?.message}
             >
               <input
+                id="phone"
                 className="input"
                 placeholder="98290 xxxxx"
                 {...register("phone")}
-              // style={{
-              //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-              //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-              //   outline: "none", background: "#fff"
-              // }}
               />
-              {errors.phone && <ErrorText message={errors.phone.message} />}
             </Field>
 
-            <div className="flex gap-3">
-              <Field label="Amount (₹)" className="flex-1"
-              // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Field
+                label="Amount (₹)"
+                htmlFor="amount"
+                error={errors.amount?.message}
+                className="sm:flex-1"
               >
                 <input
+                  id="amount"
                   type="number"
                   className="input"
                   step="0.01"
-                  {...register("amount")} 
-                // style={{
-                //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-                //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-                //   outline: "none", background: "#fff"
-                // }}
+                  {...register("amount")}
                 />
-                {errors.amount && <ErrorText message={errors.amount.message} />}
               </Field>
-              <Field label="Cycle" className="flex-1"
-              // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
+              <Field label="Cycle"
+                htmlFor="cycleDays"
+                className="sm:flex-1"
               >
                 <select
+                  id="cycleDays"
                   className="input"
                   {...register("cycleDays")}
-                // style={{
-                //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-                //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-                //   outline: "none", background: "#fff"
-                // }}
                 >
                   <option value={28}>28 days</option>
                   <option value={30}>30 days</option>
@@ -216,48 +258,91 @@ export function EditModal({
               </Field>
             </div>
 
-            <div className="flex gap-3">
-              <Field label="Last recharged on" className="flex-1"
-              // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
-              >
-                <input
-                  type="date"
-                  className="input"
-                  {...register("lastRecharge")}
-                // style={{
-                //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-                //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-                //   outline: "none", background: "#fff"
-                // }}
-                />
-                {errors.lastRecharge && <ErrorText message={errors.lastRecharge.message} />}
-              </Field>
-              <Field label="Remind me (days before)" className="flex-1"
-              // style={{ fontFamily: "'Inter', sans-serif", fontSize: 12.5, fontWeight: 600, color: COLORS.ink, display: "block", marginBottom: 6 }}
-              >
+            <Field label="When did this cycle start">
+              <div
+                role="group"
+                aria-label="How do you want to enter the cycle start"
+                className="flex rounded-lg border border-line p-0.5 bg-paper-dim/50 text-[11px] font-semibold">
+                <button
+                  type="button"
+                  aria-pressed={dateMode === "last"}
+                  onClick={() => setDateMode("last")}
+                  className={toggleBtn(dateMode === "last")}
+                >
+                  I know the last recharge date
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={dateMode === "expiry"}
+                  onClick={() => {
+                    setDateMode("expiry");
+                    setExpiryError(null);
+                  }}
+                  className={toggleBtn(dateMode === "expiry")}
+                >
+                  I only know the expiry date
+                </button>
+              </div>
+            </Field>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              {dateMode === "expiry" ? (
+                <Field
+                  label="Current pack expires on"
+                  htmlFor="expiry"
+                  error={expiryError ?? undefined}
+                  className="sm:flex-1">
+                  <input
+                    id="expiry"
+                    type="date"
+                    className="input"
+                    value={expiryInput}
+                    onChange={(e) => {
+                      setExpiryInput(e.target.value);
+                      setExpiryError(null);
+                    }}
+                  />
+                </Field>
+              ) : (
+                <Field
+                  label="Last recharged on"
+                  htmlFor="lastRecharge"
+                  error={errors.lastRecharge?.message}
+                  className="sm:flex-1">
+                  <input
+                    id="lastRecharge"
+                    type="date"
+                    className="input"
+                    {...register("lastRecharge")}
+                  />
+                </Field>
+              )}
+              <Field
+                label="Remind me (days before)"
+                htmlFor="leadDays"
+                error={errors.leadDays?.message}
+                className="sm:flex-1">
                 <input
                   type="number"
                   className="input"
                   {...register("leadDays")}
-                // style={{
-                //   width: "100%", boxSizing: "border-box", fontFamily: "'Inter', sans-serif", fontSize: 14,
-                //   color: COLORS.ink, border: `1px solid ${COLORS.line}`, borderRadius: 8, padding: "10px 12px",
-                //   outline: "none", background: "#fff"
-                // }}
                 />
-                {errors.leadDays && <ErrorText message={errors.leadDays.message} />}
               </Field>
             </div>
+
+            {renewsOnLabel && (
+              <p className="text-xs text-ink-soft -mt-1">
+                {dateMode === "expiry" ? "We'll " : "This "}renews on{" "}
+                <span className="font-semibold text-ink">{renewsOnLabel}</span>.
+              </p>
+            )}
+
           </div>
 
           <button
             type="submit"
             disabled={saving}
-            className="w-full mt-5 bg-brand hover:bg-brand-light transition-colors text-white font-semibold text-sm rounded-lg py-2.5 disabled:opacity-60"
-          // style={{
-          //   width: "100%", marginTop: 20, fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 600,
-          //   color: "#fff", background: COLORS.ink, border: "none", borderRadius: 8, padding: "12px 0", cursor: "pointer"
-          // }}
+            className="w-full mt-5 cursor-pointer border-none bg-brand hover:bg-brand-light transition-colors text-white font-semibold text-sm rounded-lg py-3 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? "Saving…" : isEditing ? "Save changes" : "Add recharge"}
           </button>
@@ -266,9 +351,4 @@ export function EditModal({
       </div>
     </div>
   );
-}
-
-function ErrorText({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-rose mt-1">{message}</p>;
 }

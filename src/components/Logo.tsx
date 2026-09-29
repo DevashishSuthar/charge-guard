@@ -17,7 +17,7 @@ export function Logo({
   dotClassName = "w-2.5 h-2.5",
   textClassName = "text-lg",
   className = "",
-  size=22
+  size = 22
 }: {
   /** If provided, wraps the mark in a Next.js Link. Omit for a static (non-clickable) mark. */
   href?: string;
@@ -27,16 +27,14 @@ export function Logo({
   size?: number;
 }) {
   const mark = (
-      <div className={`flex items-center gap-2 ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`}>
       <div
         className="rounded-[7px] bg-ink flex items-center justify-center shrink-0"
         style={{ width: size + 10, height: size + 10 }}
       >
         <div className="w-1.5 h-1.5 rounded-full bg-amber shadow-[8px_0_0_var(--color-teal)]" />
       </div>
-      <span
-              className={`font-display font-semibold text-ink tracking-[-0.01em] whitespace-nowrap ${textClassName}`}
-      >
+      <span className={`font-display font-semibold text-ink tracking-[-0.01em] whitespace-nowrap ${textClassName}`}>
         Charge Guard
       </span>
     </div>

@@ -5,7 +5,9 @@ import { Plus } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
 import { EditModal, RechargeFormValues } from "@/components/EditModal";
 import { RechargeCard } from "@/components/RechargeCard";
+import { RechargeCardSkeleton } from "@/components/RechargeCardSkeleton";
 import { enablePushNotifications } from "@/lib/pushClient";
+import { useToast } from "@/components/Toast";
 import type { RechargeItem } from "@/lib/types";
 
 const emptyValues: RechargeFormValues = {
@@ -20,6 +22,7 @@ const emptyValues: RechargeFormValues = {
 };
 
 export function Dashboard() {
+  const { showToast } = useToast();
   const [items, setItems] = useState<RechargeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [pushDeviceCount, setPushDeviceCount] = useState(0);
@@ -29,6 +32,7 @@ export function Dashboard() {
   const [initialValues, setInitialValues] = useState<RechargeFormValues>(emptyValues);
   const [saving, setSaving] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
+  const [markingId, setMarkingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [rechargesRes, meRes] = await Promise.all([
@@ -73,9 +77,9 @@ export function Dashboard() {
   async function handleSave(data: RechargeFormValues) {
     setSaving(true);
     try {
-      const payload = { 
+      const payload = {
         ...data,
-        phone: data.phone || undefined 
+        phone: data.phone || undefined
       };
 
       const res = await fetch(
@@ -96,9 +100,19 @@ export function Dashboard() {
     }
   }
 
-  async function handleMarkDone(id: string) {
-    await fetch(`/api/recharges/${id}/recharge`, { method: "POST" });
-    await load();
+  async function handleMarkDone(item: RechargeItem) {
+    setMarkingId(item.id);
+    try {
+      const res = await fetch(`/api/recharges/${item.id}/recharge`, { method: "POST" });
+      if (res.ok) {
+        showToast(`${item.label} marked as recharged — renews again in ${item.cycleDays} days.`);
+      } else {
+        showToast("Couldn't mark that as recharged. Try again.", "error");
+      }
+      await load();
+    } finally {
+      setMarkingId(null);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -124,13 +138,13 @@ export function Dashboard() {
     <div className="min-h-screen bg-paper">
       <TopNav />
 
-      <main className="max-w-230 mx-auto px-6 pt-9 pb-20">
+      <main className="max-w-230 mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-20">
         {noChannel && !loading && (
-          <div className="mb-5 flex items-center justify-between gap-3 bg-amber-soft text-amber text-sm rounded-lg px-4 py-3">
+          <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 bg-amber-soft text-amber text-sm rounded-lg px-4 py-3">
             <span>You won&apos;t get reminded until you enable a notification channel.</span>
             <button
               onClick={handleEnablePush}
-              className="font-semibold underline shrink-0"
+              className="font-semibold underline shrink-0 text-left sm:text-inherit"
             >
               Enable push
             </button>
@@ -140,7 +154,7 @@ export function Dashboard() {
           <p className="mb-5 text-sm text-ink-soft">{pushMessage}</p>
         )}
 
-        <div className="flex items-end justify-between mb-5">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5">
           <div>
             <h1 className="font-display text-2xl font-semibold text-ink m-0">
               Your recharges
@@ -149,31 +163,36 @@ export function Dashboard() {
               {overdueCount > 0
                 ? `${overdueCount} overdue, ${soonCount} due soon`
                 : soonCount > 0
-                ? `${soonCount} due soon — everything else is on track`
-                : "Everything's on track"}
+                  ? `${soonCount} due soon — everything else is on track`
+                  : "Everything's on track"}
             </p>
           </div>
           <button
             onClick={openAdd}
-            className="flex items-center gap-1.5 bg-brand hover:bg-brand-light transition-colors text-white text-sm font-semibold border-none rounded-lg px-4 py-2.5 cursor-pointer"
+            className="flex items-center justify-center gap-1.5 bg-brand hover:bg-brand-light transition-colors text-white text-sm font-semibold border-none rounded-lg px-4 py-2.5 cursor-pointer w-full sm:w-auto"
           >
             <Plus size={15} /> Add recharge
           </button>
         </div>
 
         {loading ? (
-          <p className="text-sm text-ink-soft">Loading…</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <RechargeCardSkeleton key={i} />
+            ))}
+          </div>
         ) : items.length === 0 ? (
           <div className="border border-dashed border-line rounded-xl p-10 text-center text-ink-soft text-sm">
             No recharges yet. Add your first one to get reminders before it&apos;s due.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
               <RechargeCard
                 key={item.id}
                 item={item}
-                onDone={() => handleMarkDone(item.id)}
+                marking={markingId === item.id}
+                onDone={() => handleMarkDone(item)}
                 onEdit={() => openEdit(item)}
                 onDelete={() => handleDelete(item.id)}
               />

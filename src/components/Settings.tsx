@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Send, LogOut } from "lucide-react";
+import { Bell, Check, Loader2, Send, LogOut } from "lucide-react";
 import { TopNav } from "@/components/TopNav";
 import { enablePushNotifications } from "@/lib/pushClient";
+import { useToast } from "@/components/Toast";
 
 type Me = {
   email: string;
@@ -13,11 +14,14 @@ type Me = {
   pushDeviceCount: number;
 };
 
+type SaveState = "idle" | "saving" | "saved";
+
 export function Settings() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [me, setMe] = useState<Me | null>(null);
   const [telegramInput, setTelegramInput] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [telegramSave, setTelegramSave] = useState<SaveState>("idle");
 
   useEffect(() => {
     fetch("/api/me")
@@ -29,18 +33,28 @@ export function Settings() {
   }, []);
 
   async function saveTelegram() {
-    const res = await fetch("/api/me", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ telegramChatId: telegramInput || null }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setMe((prev) => (prev ? { ...prev, ...updated } : prev));
-      setMessage("Telegram chat connected.");
-    } else {
-      const data = await res.json().catch(() => null);
-      setMessage(data?.error ?? "Couldn't save the Telegram chat ID.");
+    setTelegramSave("saving");
+    try {
+      const res = await fetch("/api/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telegramChatId: telegramInput || null }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setMe((prev) => (prev ? { ...prev, ...updated } : prev));
+        setTelegramSave("saved");
+        showToast("Telegram chat connected.");
+        // Brief "Saved" confirmation right on the button, then back to normal.
+        setTimeout(() => setTelegramSave("idle"), 1600);
+      } else {
+        const data = await res.json().catch(() => null);
+        setTelegramSave("idle");
+        showToast(data?.error ?? "Couldn't save the Telegram chat ID.", "error");
+      }
+    } catch {
+      setTelegramSave("idle");
+      showToast("Couldn't reach the server. Try again.", "error");
     }
   }
 
@@ -53,15 +67,19 @@ export function Settings() {
     if (res.ok) {
       const updated = await res.json();
       setMe((prev) => (prev ? { ...prev, ...updated } : prev));
+      showToast("Default lead time updated.");
     } else {
       const data = await res.json().catch(() => null);
-      setMessage(data?.error ?? "Couldn't update the default lead time.");
+      showToast(data?.error ?? "Couldn't update the default lead time.", "error");
     }
   }
 
   async function handleEnablePush() {
     const result = await enablePushNotifications();
-    setMessage(result.ok ? "Push notifications enabled on this device." : result.error ?? "Something went wrong");
+    showToast(
+      result.ok ? "Push notifications enabled on this device." : result.error ?? "Something went wrong",
+      result.ok ? "success" : "error"
+    );
     if (result.ok) {
       const r = await fetch("/api/me");
       setMe(await r.json());
@@ -80,12 +98,10 @@ export function Settings() {
     <div className="min-h-screen bg-paper">
       <TopNav />
 
-      <main className="max-w-160 mx-auto px-6 pt-9 pb-20">
+      <main className="max-w-160 mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-20">
         <h1 className="font-display text-2xl font-semibold text-ink mb-6">
           Settings
         </h1>
-
-        {message && <p className="text-sm text-teal mb-4">{message}</p>}
 
         <Section title="Account">
           <Row label="Email" value={me.email} />
@@ -102,7 +118,7 @@ export function Settings() {
             <div className="flex items-center gap-1.5 text-sm text-ink-soft mb-2">
               <Send size={13} /> Telegram chat ID
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 className="input"
                 placeholder="e.g. 5839201744"
@@ -111,9 +127,15 @@ export function Settings() {
               />
               <button
                 onClick={saveTelegram}
-                className="shrink-0 bg-brand hover:bg-brand-light transition-colors text-white text-xs font-semibold rounded-md px-3"
+                disabled={telegramSave === "saving"}
+                className={`shrink-0 flex items-center justify-center gap-1.5 transition-colors text-xs font-semibold rounded-md px-3 py-2.5 sm:py-0 min-w-20 ${telegramSave === "saved"
+                  ? "bg-teal text-white"
+                  : "bg-brand hover:bg-brand-light text-white disabled:opacity-70 disabled:cursor-wait"
+                  }`}
               >
-                Save
+                {telegramSave === "saving" && <Loader2 size={12} className="animate-spin" />}
+                {telegramSave === "saved" && <Check size={12} />}
+                {telegramSave === "saving" ? "Saving…" : telegramSave === "saved" ? "Saved" : "Save"}
               </button>
             </div>
             <p className="text-xs text-ink-soft mt-2">
@@ -175,7 +197,7 @@ function Row({
   icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between p-4 border-b border-line last:border-b-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 border-b border-line last:border-b-0">
       <div>
         <div className="text-sm text-ink-soft">
           {label}
@@ -187,7 +209,7 @@ function Row({
       {action && (
         <button
           onClick={action.onClick}
-          className="text-xs font-semibold text-ink bg-paper-dim border-none rounded-md px-3 py-1.5"
+          className="text-xs font-semibold text-ink bg-paper-dim border-none rounded-md px-3 py-1.5 self-start sm:self-auto"
         >
           {action.label}
         </button>

@@ -1,5 +1,6 @@
 import {
     Check,
+    Loader2,
     Pencil,
     Trash2,
     Smartphone,
@@ -17,31 +18,49 @@ const statusStyles: Record<DueStatus, { text: string; bg: string; label: string 
     overdue: { text: "text-rose", bg: "bg-rose-soft", label: "Overdue" },
 };
 
+/** Same calendar day, regardless of time-of-day. */
+function isToday(iso: string) {
+    const d = new Date(iso);
+    const now = new Date();
+    return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
+    );
+}
+
 export function RechargeCard({
     item,
     onDone,
     onEdit,
     onDelete,
+    marking = false
 }: {
     item: RechargeItem;
     onDone: () => void;
     onEdit: () => void;
     onDelete: () => void;
+        /** True while a "Done" request for this card is in flight. */
+        marking?: boolean;
 }) {
     const s = statusStyles[item.status];
     const due = new Date(item.due);
     const dueLabel = due.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
     const TypeIcon = item.type === "BROADBAND" ? Wifi : Smartphone;
 
+    // Recharging again the same day it was already marked done is a no-op
+    // (the due date can't move any further forward), which used to leave
+    // the "Done" button looking unresponsive — nothing on the card visibly
+    // changed. Instead of letting that click silently do nothing, the
+    // button swaps to a disabled "Recharged" state so it's clear the click
+    // already registered and there's nothing further to do today.
+    const alreadyDoneToday = isToday(item.lastRecharge);
+
     // const { due, daysLeft, status } = dueInfo(item);
 
     return (
-        <div className="relative bg-white border border-line rounded-xl flex overflow-visible shadow-sm"
-        // style={{
-        //   position: "relative", background: "#fff", border: `1px solid ${COLORS.line}`,
-        //   borderRadius: 10, display: "flex", overflow: "visible",
-        //   boxShadow: "0 1px 2px rgba(22,35,61,0.04)"
-        // }}
+        <div
+            className="relative bg-white border border-line rounded-xl flex overflow-visible shadow-sm"
         >
             <div className="flex-1 p-4 min-w-0">
                 <div className="flex items-start justify-between gap-2">
@@ -64,22 +83,14 @@ export function RechargeCard({
                         <button
                             onClick={onEdit}
                             aria-label="Edit"
-                            className="w-6.5 h-6.5 flex items-center justify-center rounded border-none cursor-pointer hover:bg-paper-dim"
-                        // style={{
-                        //   width: 26, height: 26, borderRadius: 6, border: "none", background: "transparent",
-                        //   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
-                        // }}
+                            className="size-6.5 flex items-center justify-center rounded-md border-none cursor-pointer bg-transparent hover:bg-paper-dim"
                         >
                             <Pencil size={13} className="text-ink-soft" />
                         </button>
                         <button
                             onClick={onDelete}
                             aria-label="Delete"
-                            className="w-6.5 h-6.5 flex items-center justify-center rounded border-none cursor-pointer hover:bg-paper-dim"
-                        // style={{
-                        //   width: 26, height: 26, borderRadius: 6, border: "none", background: "transparent",
-                        //   cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
-                        // }}
+                            className="size-6.5 flex items-center justify-center rounded-md border-none bg-transparent cursor-pointer hover:bg-paper-dim"
                         >
                             <Trash2 size={13} className="text-ink-soft" />
                         </button>
@@ -98,14 +109,7 @@ export function RechargeCard({
                 </div>
             </div>
 
-            <div
-                className={`relative w-24 shrink-0 border-l border-dashed border-line flex flex-col items-center justify-center gap-2 px-2 py-3 rounded-r-xl ${s.bg}`}
-            //   style={{
-            //   position: "relative", width: 96, flexShrink: 0, borderLeft: `1px dashed ${COLORS.line}`,
-            //   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            //   gap: 8, padding: "12px 8px", background: s.bg, borderRadius: "0 10px 10px 0"
-            // }}
-            >
+            <div className={`relative w-20 sm:w-24 shrink-0 border-l border-dashed border-line flex flex-col items-center justify-center gap-2 px-2 py-3 rounded-r-xl ${s.bg}`}>
                 <VoucherNotch side="left" />
                 <div className={`font-mono text-xl font-semibold leading-none ${s.text}`}>
                     {item.status === "overdue" ? `+${Math.abs(item.daysLeft)}` : item.daysLeft}
@@ -115,14 +119,22 @@ export function RechargeCard({
                 </div>
                 <button
                     onClick={onDone}
-                    className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-white bg-brand hover:bg-brand-light transition-colors rounded px-2 py-1 cursor-pointer"
-                // style={{
-                //   marginTop: 4, fontFamily: "'Inter', sans-serif", fontSize: 10.5, fontWeight: 600,
-                //   color: "#fff", background: COLORS.ink, border: "none", borderRadius: 6,
-                //   padding: "5px 8px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4
-                // }}
+                    disabled={alreadyDoneToday || marking}
+                    aria-label={alreadyDoneToday ? "Already recharged today" : "Mark as recharged"}
+                    title={alreadyDoneToday ? "Already marked as recharged today" : undefined}
+                    className={`mt-1 flex items-center gap-1 text-[10px] font-semibold rounded-md px-2 py-1 transition-colors ${alreadyDoneToday
+                        ? "bg-paper-dim text-ink-soft cursor-default"
+                        : marking
+                            ? "bg-brand-light text-white cursor-wait opacity-80"
+                            : "text-white bg-brand hover:bg-brand-light cursor-pointer"
+                        }`}
                 >
-                    <Check size={11} /> Done
+                    {marking ? (
+                        <Loader2 size={11} className="animate-spin" />
+                    ) : (
+                        <Check size={11} />
+                    )}
+                    {alreadyDoneToday ? "Recharged" : "Done"}
                 </button>
             </div>
         </div>
@@ -141,14 +153,8 @@ export function RechargeCard({
  */
 function VoucherNotch({ side }: { side: "left" | "right" }) {
     return (
-        <div
-            className={`absolute top-1/2 -translate-y-1/2 w-4.5 h-4.5 rounded-full bg-paper border border-line ${side === "left" ? "-left-2.25" : "-right-2.25"
-                }`}
-        // style={{
-        //   position: "absolute", top: "50%", transform: "translateY(-50%)",
-        //   [side]: -9, width: 18, height: 18, borderRadius: "50%",
-        //   background: COLORS.paper, border: `1px solid ${COLORS.line}`
-        // }} 
+        <div 
+            className={`absolute top-1/2 -translate-y-1/2 size-4.5 rounded-full bg-paper border border-line ${side === "left" ? "-left-2.25" : "-right-2.25"}`} 
         />
     );
 }
