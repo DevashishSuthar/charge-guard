@@ -69,10 +69,10 @@ export function RechargeCard({
                             <TypeIcon size={15} className="text-ink-soft" />
                         </div>
                         <div className="min-w-0">
-                            <div className="font-display font-semibold text-[15px] text-ink">
+                            <div className="font-display font-semibold text-[15px] text-ink truncate">
                                 {item.label}
                             </div>
-                            <div className="text-xs text-ink-soft mt-0.5">
+                            <div className="text-xs text-ink-soft mt-0.5 truncate">
                                 {item.provider}
                                 {item.phone ? ` · ${item.phone}` : ""}
                             </div>

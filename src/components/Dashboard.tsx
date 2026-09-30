@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Plus } from "lucide-react";
-import { TopNav } from "@/components/TopNav";
 import { EditModal, RechargeFormValues } from "@/components/EditModal";
 import { RechargeCard } from "@/components/RechargeCard";
 import { RechargeCardSkeleton } from "@/components/RechargeCardSkeleton";
@@ -135,10 +134,8 @@ export function Dashboard() {
   // const soonCount = items.filter(i => dueInfo(i).status === "soon").length;
 
   return (
-    <div className="min-h-screen bg-paper">
-      <TopNav />
-
-      <main className="max-w-230 mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-20">
+    <>
+      <main className="max-w-shell mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-20">
         {noChannel && !loading && (
           <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 bg-amber-soft text-amber text-sm rounded-lg px-4 py-3">
             <span>You won&apos;t get reminded until you enable a notification channel.</span>
@@ -176,7 +173,7 @@ export function Dashboard() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <RechargeCardSkeleton key={i} />
             ))}
@@ -186,7 +183,7 @@ export function Dashboard() {
             No recharges yet. Add your first one to get reminders before it&apos;s due.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {items.map((item) => (
               <RechargeCard
                 key={item.id}
@@ -210,6 +207,6 @@ export function Dashboard() {
           onClose={() => setModalOpen(false)}
         />
       )}
-    </div>
+    </>
   );
 }

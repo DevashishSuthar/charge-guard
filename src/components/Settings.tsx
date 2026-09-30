@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Check, Loader2, Send, LogOut } from "lucide-react";
-import { TopNav } from "@/components/TopNav";
+import { SettingsSkeleton } from "@/components/PageSkeletons";
 import { enablePushNotifications } from "@/lib/pushClient";
 import { useToast } from "@/components/Toast";
 
@@ -92,12 +92,10 @@ export function Settings() {
     router.refresh();
   }
 
-  if (!me) return <div className="min-h-screen bg-paper" />;
+  if (!me) return <SettingsSkeleton />;
 
   return (
-    <div className="min-h-screen bg-paper">
-      <TopNav />
-
+    <>
       <main className="max-w-160 mx-auto px-4 sm:px-6 pt-6 sm:pt-9 pb-20">
         <h1 className="font-display text-2xl font-semibold text-ink mb-6">
           Settings
@@ -168,7 +166,7 @@ export function Settings() {
           <LogOut size={14} /> Sign out
         </button>
       </main>
-    </div>
+    </>
   );
 }
 

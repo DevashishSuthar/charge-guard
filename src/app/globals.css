@@ -25,6 +25,10 @@
   --color-rose-soft: #f5e1e2;
   --color-line: #dedbd1;
 
+  /* App shell width — the header and the dashboard grid both use
+    `max-w-shell` so their edges line up. (Generates the max-w-shell utility.) */
+  --container-shell: 64rem;
+
   /* Brand — used for the logo mark and primary actions (buttons, links,
     focus states). Everything else (status colors, body text) stays as-is. */
   --color-brand: #f97316;
